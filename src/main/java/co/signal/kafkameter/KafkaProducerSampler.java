@@ -92,6 +92,11 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   }
 
   @Override
+  public void teardownTest(JavaSamplerContext context) {
+    producer.close();
+  }
+
+  @Override
   public Arguments getDefaultParameters() {
     Arguments defaultParameters = new Arguments();
     defaultParameters.addArgument(PARAMETER_KAFKA_BROKERS, "${PARAMETER_KAFKA_BROKERS}");
