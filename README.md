@@ -43,12 +43,11 @@ You may also override the following:
 
 * **kafka_message_serializer**: the Kafka client `value.serializer` property.
 * **kafka_key_serializer**: the Kafka client `key.serializer` property.
-
-* **kafka_use_ssl**: set to 'true' if you want to use SSL to connect to kafka
-* **kafka_ssl_truststore**: the truststore certificate file (with path)
-* **kafka_ssl_truststore_password**: the truststore certificate file password
-* **kafka_ssl_keystore**: the keystore certificate file (with path)
-* **kafka_ssl_keystore_password**: the keystore certificate file password
+* **kafka_use_ssl**: set to 'true' if you want to use SSL to connect to kafka.
+* **kafka_ssl_truststore**: the truststore certificate file (with path).
+* **kafka_ssl_truststore_password**: the truststore certificate file password.
+* **kafka_ssl_keystore**: the keystore certificate file (with path).
+* **kafka_ssl_keystore_password**: the keystore certificate file password.
 
 ### Load Generator Config
 
