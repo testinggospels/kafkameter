@@ -19,17 +19,15 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Properties;
 
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
-import kafka.serializer.DefaultEncoder;
-import kafka.serializer.NullEncoder;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jorphan.logging.LoggingManager;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.log.Logger;
 
 /**
@@ -76,19 +74,56 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
    */
   private static final String PARAMETER_KAFKA_KEY_SERIALIZER = "kafka_key_serializer";
 
-  private Producer<Long, byte[]> producer;
+  /**
+   * Parameter for setting the Kafka ssl keystore (include path information); for example, "server.keystore.jks".
+   */
+  private static final String PARAMETER_KAFKA_SSL_KEYSTORE = "kafka_ssl_keystore";
+
+  /**
+   * Parameter for setting the Kafka ssl keystore password.
+   */
+  private static final String PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD = "kafka_ssl_keystore_password";
+
+  /**
+   * Parameter for setting the Kafka ssl truststore (include path information); for example, "client.truststore.jks".
+   */
+  private static final String PARAMETER_KAFKA_SSL_TRUSTSTORE = "kafka_ssl_truststore";
+
+  /**
+   * Parameter for setting the Kafka ssl truststore password.
+   */
+  private static final String PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD = "kafka_ssl_truststore_password";
+
+  /**
+   * Parameter for setting the Kafka security protocol; "true" or "false".
+   */
+  private static final String PARAMETER_KAFKA_USE_SSL = "kafka_use_ssl";
+
+  //private Producer<Long, byte[]> producer;
+
+  private KafkaProducer<String, String> producer;
+
 
   @Override
   public void setupTest(JavaSamplerContext context) {
     Properties props = new Properties();
-//    props.put("client.id", "somethingSpecificToThisThread");
-    props.put("metadata.broker.list", context.getParameter(PARAMETER_KAFKA_BROKERS));
-    props.put("serializer.class", DefaultEncoder.class.getName());
-    props.put("key.serializer.class", NullEncoder.class.getName());
-    props.put("request.required.acks", "1");
 
-    ProducerConfig config = new ProducerConfig(props);
-    producer = new Producer<Long, byte[]>(config);
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, context.getParameter(PARAMETER_KAFKA_BROKERS));
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, context.getParameter(PARAMETER_KAFKA_KEY_SERIALIZER));
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, context.getParameter(PARAMETER_KAFKA_MESSAGE_SERIALIZER));
+    props.put(ProducerConfig.ACKS_CONFIG, "1");
+
+    // check if kafka security protocol is SSL or PLAINTEXT (default)
+    if(context.getParameter(PARAMETER_KAFKA_USE_SSL).equals("true")){
+      log.info("Setting up SSL properties...");
+      props.put("security.protocol", "SSL");
+      props.put("ssl.keystore.location", context.getParameter(PARAMETER_KAFKA_SSL_KEYSTORE));
+      props.put("ssl.keystore.password", context.getParameter(PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD));
+      props.put("ssl.truststore.location", context.getParameter(PARAMETER_KAFKA_SSL_TRUSTSTORE));
+      props.put("ssl.truststore.password", context.getParameter(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD));
+    }
+
+    producer = new KafkaProducer<String, String>(props);
   }
 
   @Override
@@ -103,8 +138,13 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     defaultParameters.addArgument(PARAMETER_KAFKA_TOPIC, "${PARAMETER_KAFKA_TOPIC}");
     defaultParameters.addArgument(PARAMETER_KAFKA_KEY, "${PARAMETER_KAFKA_KEY}");
     defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE, "${PARAMETER_KAFKA_MESSAGE}");
-    defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE_SERIALIZER, "kafka.serializer.DefaultEncoder");
-    defaultParameters.addArgument(PARAMETER_KAFKA_KEY_SERIALIZER, "kafka.serializer.NullEncoder");
+    defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+    defaultParameters.addArgument(PARAMETER_KAFKA_KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_KEYSTORE, "${PARAMETER_KAFKA_SSL_KEYSTORE}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD, "${PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE, "${PARAMETER_KAFKA_SSL_TRUSTSTORE}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD, "${PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_USE_SSL, "${PARAMETER_KAFKA_USE_SSL}");
     return defaultParameters;
   }
 
@@ -112,11 +152,15 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   public SampleResult runTest(JavaSamplerContext context) {
     SampleResult result = newSampleResult();
     String topic = context.getParameter(PARAMETER_KAFKA_TOPIC);
-    Long key = context.getLongParameter(PARAMETER_KAFKA_KEY);
+    String key = context.getParameter(PARAMETER_KAFKA_KEY);
     String message = context.getParameter(PARAMETER_KAFKA_MESSAGE);
     sampleResultStart(result, message);
+
+    ProducerRecord<String, String> producerRecord = new ProducerRecord<String, String>(
+            topic, key, message);
+
     try {
-      producer.send(new KeyedMessage<Long, byte[]>(topic, key, message.getBytes()));
+      producer.send(producerRecord);
       sampleResultSuccess(result, null);
     } catch (Exception e) {
       sampleResultFailed(result, "500", e);
