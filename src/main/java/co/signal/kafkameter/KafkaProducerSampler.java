@@ -98,6 +98,10 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
    * Parameter for setting the Kafka security protocol; "true" or "false".
    */
   private static final String PARAMETER_KAFKA_USE_SSL = "kafka_use_ssl";
+  /**
+   * Parameter for setting encryption. It is optional.
+   */
+  private static final String PARAMETER_KAFKA_COMPRESSION_TYPE = "kafka_compression_type";
 
   //private Producer<Long, byte[]> producer;
 
@@ -121,6 +125,10 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
       props.put("ssl.keystore.password", context.getParameter(PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD));
       props.put("ssl.truststore.location", context.getParameter(PARAMETER_KAFKA_SSL_TRUSTSTORE));
       props.put("ssl.truststore.password", context.getParameter(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD));
+    }
+
+    if (context.containsParameter(PARAMETER_KAFKA_COMPRESSION_TYPE)) {
+      props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, context.getParameter(PARAMETER_KAFKA_COMPRESSION_TYPE));
     }
 
     producer = new KafkaProducer<String, String>(props);

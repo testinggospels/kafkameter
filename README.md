@@ -48,6 +48,7 @@ You may also override the following:
 * **kafka_ssl_truststore_password**: the truststore certificate file password.
 * **kafka_ssl_keystore**: the keystore certificate file (with path).
 * **kafka_ssl_keystore_password**: the keystore certificate file password.
+* **kafka_compression_type**: the compression type, for example gzip.
 
 ### Load Generator Config
 
