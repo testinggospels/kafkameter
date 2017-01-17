@@ -48,7 +48,9 @@ You may also override the following:
 * **kafka_ssl_truststore_password**: the truststore certificate file password.
 * **kafka_ssl_keystore**: the keystore certificate file (with path).
 * **kafka_ssl_keystore_password**: the keystore certificate file password.
-* **kafka_compression_type**: the compression type, for example gzip.
+* **kafka_compression_type**: the compression type, for example gzip. Leave the field empty for no encryption.
+* **kafka_partition**: the partition number to use. Use a fixed value or calculate it on a per thread basis. Example: `${__jexl(${__threadNum} % 10)}` This would spread the threads across 10 partitions.
+ Works best if the thread numbers are a multiple of the total partitions. If you leave this field empty, the Kafka library will calculate a value based on your key.
 
 ### Load Generator Config
 
