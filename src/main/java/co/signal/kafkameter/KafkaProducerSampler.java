@@ -22,6 +22,8 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
+import com.google.common.base.Strings;
+
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
@@ -98,10 +100,16 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
    * Parameter for setting the Kafka security protocol; "true" or "false".
    */
   private static final String PARAMETER_KAFKA_USE_SSL = "kafka_use_ssl";
+
   /**
    * Parameter for setting encryption. It is optional.
    */
   private static final String PARAMETER_KAFKA_COMPRESSION_TYPE = "kafka_compression_type";
+
+  /**
+   * Parameter for setting the partition. It is optional.
+   */
+  private static final String PARAMETER_KAFKA_PARTITION = "kafka_partition";
 
   //private Producer<Long, byte[]> producer;
 
@@ -127,8 +135,9 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
       props.put("ssl.truststore.password", context.getParameter(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD));
     }
 
-    if (context.containsParameter(PARAMETER_KAFKA_COMPRESSION_TYPE)) {
-      props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, context.getParameter(PARAMETER_KAFKA_COMPRESSION_TYPE));
+    String compressionType = context.getParameter(PARAMETER_KAFKA_COMPRESSION_TYPE);
+    if (!Strings.isNullOrEmpty(compressionType)) {
+      props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
     }
 
     producer = new KafkaProducer<String, String>(props);
@@ -153,6 +162,8 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE, "${PARAMETER_KAFKA_SSL_TRUSTSTORE}");
     defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD, "${PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD}");
     defaultParameters.addArgument(PARAMETER_KAFKA_USE_SSL, "${PARAMETER_KAFKA_USE_SSL}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_COMPRESSION_TYPE, null);
+    defaultParameters.addArgument(PARAMETER_KAFKA_PARTITION, null);
     return defaultParameters;
   }
 
@@ -164,8 +175,14 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     String message = context.getParameter(PARAMETER_KAFKA_MESSAGE);
     sampleResultStart(result, message);
 
-    ProducerRecord<String, String> producerRecord = new ProducerRecord<String, String>(
-            topic, key, message);
+    final ProducerRecord<String, String> producerRecord;
+    String partitionString = context.getParameter(PARAMETER_KAFKA_PARTITION);
+    if (Strings.isNullOrEmpty(partitionString)) {
+      producerRecord = new ProducerRecord<String, String>(topic, key, message);
+    } else {
+      final int partitionNumber = Integer.parseInt(partitionString);
+      producerRecord = new ProducerRecord<String, String>(topic, partitionNumber, key, message);
+    }
 
     try {
       producer.send(producerRecord);
