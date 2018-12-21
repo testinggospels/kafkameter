@@ -1,4 +1,4 @@
-package co.signal.loadgen;
+package co.signal.loadgen.example2;
 
 public class KafkaTestMessage implements SyntheticLoadGenerator {
     public KafkaTestMessage(String ignored) {}
