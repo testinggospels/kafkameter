@@ -15,6 +15,7 @@
  */
 package co.signal.kafkameter;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Properties;
@@ -22,6 +23,8 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.helper.StringHelpers;
 import com.google.common.base.Strings;
 
 import org.apache.jmeter.config.Arguments;
@@ -32,8 +35,11 @@ import org.apache.jorphan.logging.LoggingManager;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.log.Logger;
 
+import co.signal.handlebars.CustomHandlebars;
+
 /**
- * A {@link org.apache.jmeter.samplers.Sampler Sampler} which produces Kafka messages.
+ * A {@link org.apache.jmeter.samplers.Sampler Sampler} which produces Kafka
+ * messages.
  *
  * @author codyaray
  * @since 6/27/14
@@ -46,8 +52,10 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
 
   private static final Logger log = LoggingManager.getLoggerForClass();
 
+  private static final Handlebars handlebars = new Handlebars();
   /**
-   * Parameter for setting the Kafka brokers; for example, "kafka01:9092,kafka02:9092".
+   * Parameter for setting the Kafka brokers; for example,
+   * "kafka01:9092,kafka02:9092".
    */
   private static final String PARAMETER_KAFKA_BROKERS = "kafka_brokers";
 
@@ -77,7 +85,8 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   private static final String PARAMETER_KAFKA_KEY_SERIALIZER = "kafka_key_serializer";
 
   /**
-   * Parameter for setting the Kafka ssl keystore (include path information); for example, "server.keystore.jks".
+   * Parameter for setting the Kafka ssl keystore (include path information); for
+   * example, "server.keystore.jks".
    */
   private static final String PARAMETER_KAFKA_SSL_KEYSTORE = "kafka_ssl_keystore";
 
@@ -87,7 +96,8 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   private static final String PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD = "kafka_ssl_keystore_password";
 
   /**
-   * Parameter for setting the Kafka ssl truststore (include path information); for example, "client.truststore.jks".
+   * Parameter for setting the Kafka ssl truststore (include path information);
+   * for example, "client.truststore.jks".
    */
   private static final String PARAMETER_KAFKA_SSL_TRUSTSTORE = "kafka_ssl_truststore";
 
@@ -111,13 +121,14 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
    */
   private static final String PARAMETER_KAFKA_PARTITION = "kafka_partition";
 
-  //private Producer<Long, byte[]> producer;
+  // private Producer<Long, byte[]> producer;
 
   private KafkaProducer<String, String> producer;
 
-
   @Override
   public void setupTest(JavaSamplerContext context) {
+    handlebars.registerHelpers(StringHelpers.class);
+    handlebars.registerHelpers(CustomHandlebars.class);
     Properties props = new Properties();
 
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, context.getParameter(PARAMETER_KAFKA_BROKERS));
@@ -126,7 +137,7 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     props.put(ProducerConfig.ACKS_CONFIG, "1");
 
     // check if kafka security protocol is SSL or PLAINTEXT (default)
-    if(context.getParameter(PARAMETER_KAFKA_USE_SSL).equals("true")){
+    if (context.getParameter(PARAMETER_KAFKA_USE_SSL).equals("true")) {
       log.info("Setting up SSL properties...");
       props.put("security.protocol", "SSL");
       props.put("ssl.keystore.location", context.getParameter(PARAMETER_KAFKA_SSL_KEYSTORE));
@@ -155,12 +166,15 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     defaultParameters.addArgument(PARAMETER_KAFKA_TOPIC, "${PARAMETER_KAFKA_TOPIC}");
     defaultParameters.addArgument(PARAMETER_KAFKA_KEY, "${PARAMETER_KAFKA_KEY}");
     defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE, "${PARAMETER_KAFKA_MESSAGE}");
-    defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
-    defaultParameters.addArgument(PARAMETER_KAFKA_KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+    defaultParameters.addArgument(PARAMETER_KAFKA_MESSAGE_SERIALIZER,
+        "org.apache.kafka.common.serialization.StringSerializer");
+    defaultParameters.addArgument(PARAMETER_KAFKA_KEY_SERIALIZER,
+        "org.apache.kafka.common.serialization.StringSerializer");
     defaultParameters.addArgument(PARAMETER_KAFKA_SSL_KEYSTORE, "${PARAMETER_KAFKA_SSL_KEYSTORE}");
     defaultParameters.addArgument(PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD, "${PARAMETER_KAFKA_SSL_KEYSTORE_PASSWORD}");
     defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE, "${PARAMETER_KAFKA_SSL_TRUSTSTORE}");
-    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD, "${PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD}");
+    defaultParameters.addArgument(PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD,
+        "${PARAMETER_KAFKA_SSL_TRUSTSTORE_PASSWORD}");
     defaultParameters.addArgument(PARAMETER_KAFKA_USE_SSL, "${PARAMETER_KAFKA_USE_SSL}");
     defaultParameters.addArgument(PARAMETER_KAFKA_COMPRESSION_TYPE, null);
     defaultParameters.addArgument(PARAMETER_KAFKA_PARTITION, null);
@@ -172,7 +186,17 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     SampleResult result = newSampleResult();
     String topic = context.getParameter(PARAMETER_KAFKA_TOPIC);
     String key = context.getParameter(PARAMETER_KAFKA_KEY);
+    try {
+      key = handlebars.compileInline(context.getParameter(PARAMETER_KAFKA_KEY)).apply("");
+    } catch (IOException e1) {
+      e1.printStackTrace();
+    }
     String message = context.getParameter(PARAMETER_KAFKA_MESSAGE);
+    try {
+      message = handlebars.compileInline(context.getParameter(PARAMETER_KAFKA_MESSAGE)).apply("");
+    } catch (IOException e1) {
+      e1.printStackTrace();
+    }
     sampleResultStart(result, message);
 
     final ProducerRecord<String, String> producerRecord;
@@ -211,10 +235,8 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   /**
    * Start the sample request and set the {@code samplerData} to {@code data}.
    *
-   * @param result
-   *          the sample result to update
-   * @param data
-   *          the request to set as {@code samplerData}
+   * @param result the sample result to update
+   * @param data   the request to set as {@code samplerData}
    */
   private void sampleResultStart(SampleResult result, String data) {
     result.setSamplerData(data);
@@ -222,11 +244,12 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
   }
 
   /**
-   * Mark the sample result as {@code end}ed and {@code successful} with an "OK" {@code responseCode},
-   * and if the response is not {@code null} then set the {@code responseData} to {@code response},
-   * otherwise it is marked as not requiring a response.
+   * Mark the sample result as {@code end}ed and {@code successful} with an "OK"
+   * {@code responseCode}, and if the response is not {@code null} then set the
+   * {@code responseData} to {@code response}, otherwise it is marked as not
+   * requiring a response.
    *
-   * @param result sample result to change
+   * @param result   sample result to change
    * @param response the successful result message, may be null.
    */
   private void sampleResultSuccess(SampleResult result, /* @Nullable */ String response) {
@@ -235,15 +258,14 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     result.setResponseCodeOK();
     if (response != null) {
       result.setResponseData(response, ENCODING);
-    }
-    else {
+    } else {
       result.setResponseData("No response required", ENCODING);
     }
   }
 
   /**
-   * Mark the sample result as @{code end}ed and not {@code successful}, and set the
-   * {@code responseCode} to {@code reason}.
+   * Mark the sample result as @{code end}ed and not {@code successful}, and set
+   * the {@code responseCode} to {@code reason}.
    *
    * @param result the sample result to change
    * @param reason the failure reason
@@ -256,9 +278,10 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
 
   /**
    * Mark the sample result as @{code end}ed and not {@code successful}, set the
-   * {@code responseCode} to {@code reason}, and set {@code responseData} to the stack trace.
+   * {@code responseCode} to {@code reason}, and set {@code responseData} to the
+   * stack trace.
    *
-   * @param result the sample result to change
+   * @param result    the sample result to change
    * @param exception the failure exception
    */
   private void sampleResultFailed(SampleResult result, String reason, Exception exception) {

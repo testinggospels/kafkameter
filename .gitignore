@@ -2,4 +2,10 @@
 .idea/
 target/
 dependency-reduced-pom.xml
-
+.classpath
+.project
+*.yml
+.mvn/
+.settings/
+.vscode/
+mvnw
