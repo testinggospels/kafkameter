@@ -51,6 +51,7 @@ You may also override the following:
 * **kafka_compression_type**: the compression type, for example gzip. Leave the field empty for no encryption.
 * **kafka_partition**: the partition number to use. Use a fixed value or calculate it on a per thread basis. Example: `${__jexl(${__threadNum} % 10)}` This would spread the threads across 10 partitions.
  Works best if the thread numbers are a multiple of the total partitions. If you leave this field empty, the Kafka library will calculate a value based on your key.
+* **kafka_headers**: headers to be passed along with the message. Accepts key value pairs in querystring format, e.g. `header1=value1&header2=value2`
 
 ### Load Generator Config
 
