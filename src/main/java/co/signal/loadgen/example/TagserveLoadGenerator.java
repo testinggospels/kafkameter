@@ -29,25 +29,27 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import co.signal.loadgen.SyntheticLoadGenerator;
 
 /**
- * Example {@link SyntheticLoadGenerator} which generates {@link TagRequestMetrics} messages
- * as {@link TagRequestMetricsJsonMarshaller JSON} according to a distribution given by an
- * example Tagserve Synthetic Load Description. This example Load Description is documented
- * in the project README.
+ * Example {@link SyntheticLoadGenerator} which generates
+ * {@link TagRequestMetrics} messages as {@link TagRequestMetricsJsonMarshaller
+ * JSON} according to a distribution given by an example Tagserve Synthetic Load
+ * Description. This example Load Description is documented in the project
+ * README.
  *
  * @author codyaray
  * @since 7/17/2014
  */
 public class TagserveLoadGenerator implements SyntheticLoadGenerator {
 
-  private static final Logger log = LoggingManager.getLoggerForClass();
+  private static final Logger log = LoggerFactory.getLogger(TagserveLoadGenerator.class);
 
-  private static final Type SITE_CONFIGS_TYPE = new TypeToken<Map<String, SiteConfig>>() {}.getType();
+  private static final Type SITE_CONFIGS_TYPE = new TypeToken<Map<String, SiteConfig>>() {
+  }.getType();
 
   private static final Gson gson = new Gson();
   private static final Random random = new Random();
@@ -76,8 +78,8 @@ public class TagserveLoadGenerator implements SyntheticLoadGenerator {
   }
 
   private long nextTimestamp() {
-//    JMeterVariables variables = JMeterContextService.getContext().getVariables();
-//    int iteration = variables.getIteration();
+    // JMeterVariables variables = JMeterContextService.getContext().getVariables();
+    // int iteration = variables.getIteration();
     return System.currentTimeMillis();
   }
 
@@ -89,7 +91,8 @@ public class TagserveLoadGenerator implements SyntheticLoadGenerator {
         return entry.getKey();
       }
     }
-    // Unreachable if siteWeights is created correctly; checking sum(weights)=1 should prevent this.
+    // Unreachable if siteWeights is created correctly; checking sum(weights)=1
+    // should prevent this.
     throw new RuntimeException("Unexpected problem randomly selecting a siteId");
   }
 
@@ -132,7 +135,7 @@ public class TagserveLoadGenerator implements SyntheticLoadGenerator {
     try {
       return gson.fromJson(config, SITE_CONFIGS_TYPE);
     } catch (JsonParseException e) {
-      log.fatalError("Problem parsing json from config:\n" + config, e);
+      log.error("Problem parsing json from config:\n" + config, e);
       throw Throwables.propagate(e);
     }
   }

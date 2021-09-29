@@ -31,19 +31,20 @@ import org.apache.jmeter.engine.event.LoopIterationListener;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterVariables;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Config Element which reads a Synthetic Load Description from a file, generates
- * a domain-specific message, and exports the message under a given variableName.
+ * Config Element which reads a Synthetic Load Description from a file,
+ * generates a domain-specific message, and exports the message under a given
+ * variableName.
  *
  * @author codyaray
  * @since 6/27/14
  */
 public class LoadGenerator extends ConfigTestElement implements TestBean, LoopIterationListener {
 
-  private static final Logger log = LoggingManager.getLoggerForClass();
+  private static final Logger log = LoggerFactory.getLogger(LoadGenerator.class);
 
   private String fileName;
   private String variableName;
@@ -62,11 +63,10 @@ public class LoadGenerator extends ConfigTestElement implements TestBean, LoopIt
 
   private SyntheticLoadGenerator createGenerator(String className, @Nullable String config) {
     try {
-      return (SyntheticLoadGenerator) Class.forName(
-          className, false, Thread.currentThread().getContextClassLoader()
-      ).getConstructor(String.class).newInstance(config);
+      return (SyntheticLoadGenerator) Class.forName(className, false, Thread.currentThread().getContextClassLoader())
+          .getConstructor(String.class).newInstance(config);
     } catch (Exception e) {
-      log.fatalError("Exception initializing Load Generator class: " + className, e);
+      log.error("Exception initializing Load Generator class: " + className, e);
       throw Throwables.propagate(e);
     }
   }

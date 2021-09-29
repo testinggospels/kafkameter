@@ -33,10 +33,10 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jorphan.logging.LoggingManager;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import co.signal.handlebars.CustomHandlebars;
 
@@ -53,7 +53,7 @@ import co.signal.handlebars.CustomHandlebars;
  */
 public class KafkaProducerSampler extends AbstractJavaSamplerClient {
 
-  private static final Logger log = LoggingManager.getLoggerForClass();
+  private static final Logger log = LoggerFactory.getLogger(KafkaProducerSampler.class);
 
   private static final Handlebars handlebars = new Handlebars();
   /**
