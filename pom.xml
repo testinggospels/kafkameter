@@ -14,6 +14,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
         <jdk.version>11</jdk.version>
+        <jmeter.version>5.0</jmeter.version>
+        <kafka.version>3.0.0</kafka.version>
     </properties>
 
     <dependencies>
@@ -43,7 +45,7 @@
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_core</artifactId>
-            <version>2.11</version>
+            <version>${jmeter.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -57,7 +59,7 @@
         <dependency>
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_java</artifactId>
-            <version>2.11</version>
+            <version>${jmeter.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -73,7 +75,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.0.0</version>
+            <version>${kafka.version}</version>
             <exclusions>
                 <!-- XXX Transitively includes log4j 1.2.15 which has bad metadata
                      http://stackoverflow.com/a/9047963 -->
