@@ -18,6 +18,8 @@ package co.signal.kafkameter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -33,6 +35,7 @@ import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.log.Logger;
 
 import co.signal.handlebars.CustomHandlebars;
@@ -121,6 +124,11 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
    */
   private static final String PARAMETER_KAFKA_PARTITION = "kafka_partition";
 
+  /**
+   * Parameter for setting the headers. It is optional.
+   */
+  private static final String PARAMETER_KAFKA_HEADERS = "kafka_headers";
+
   // private Producer<Long, byte[]> producer;
 
   private KafkaProducer<String, String> producer;
@@ -178,6 +186,7 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     defaultParameters.addArgument(PARAMETER_KAFKA_USE_SSL, "${PARAMETER_KAFKA_USE_SSL}");
     defaultParameters.addArgument(PARAMETER_KAFKA_COMPRESSION_TYPE, null);
     defaultParameters.addArgument(PARAMETER_KAFKA_PARTITION, null);
+    defaultParameters.addArgument(PARAMETER_KAFKA_HEADERS, null);
     return defaultParameters;
   }
 
@@ -197,6 +206,19 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     } catch (IOException e1) {
       e1.printStackTrace();
     }
+    Map<String, String> headers = new LinkedHashMap<String, String>();
+    try {
+      String headerString = handlebars.compileInline(context.getParameter(PARAMETER_KAFKA_HEADERS)).apply("");
+      if (!Strings.isNullOrEmpty(headerString)) {
+        String[] pairs = headerString.split("&");
+        for (String pair : pairs) {
+          int idx = pair.indexOf("=");
+          headers.put(pair.substring(0, idx), pair.substring(idx + 1));
+        }
+      }
+    } catch (IOException e1) {
+      e1.printStackTrace();
+    }
     sampleResultStart(result, message);
 
     final ProducerRecord<String, String> producerRecord;
@@ -206,6 +228,9 @@ public class KafkaProducerSampler extends AbstractJavaSamplerClient {
     } else {
       final int partitionNumber = Integer.parseInt(partitionString);
       producerRecord = new ProducerRecord<String, String>(topic, partitionNumber, key, message);
+    }
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      producerRecord.headers().add(new RecordHeader(entry.getKey(), entry.getValue().getBytes()));
     }
 
     try {
